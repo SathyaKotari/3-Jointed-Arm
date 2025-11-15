@@ -1,0 +1,43 @@
+#include <Servo.h>
+
+Servo myservo;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  myservo.attach(2);
+}
+
+int convertDeg(int val){
+  //maxcoord is 5in, 127mm
+  if(val <= -1){
+    //it is max 704
+    val = val * -1;
+    val = val/3.91111;
+    return val;
+  }else{
+    //it is max 1023
+    val = val/5.68333333;
+    return val;
+  }
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  int sensorValueX = (analogRead(A1) * -1); // max 704
+  int sensorValueY = analogRead(A2); //max 1023
+  int sensorValueZ = analogRead(A3); //max 1023
+
+  int xPos = convertDeg(sensorValueX);
+  int yPos = convertDeg(sensorValueY);
+  int zPos = convertDeg(sensorValueZ);
+
+  // print out the value you read:
+  Serial.print(xPos);
+  myservo.write(xPos);
+  Serial.print(" ");
+  Serial.print(yPos);
+  Serial.print(" ");
+  Serial.println(zPos);
+
+}
