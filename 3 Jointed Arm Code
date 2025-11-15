@@ -1,0 +1,96 @@
+#include <Servo.h>
+#include <math.h>
+
+// -------------------------------------------------------------
+// 3-DOF Robotic Arm Control
+// Shoulder, Elbow, Wrist
+// -------------------------------------------------------------
+
+Servo shoulder;
+Servo elbow;
+Servo wrist;
+
+// Physical servo limits (motor hardware limits)
+static const int SERVO_MIN = 0;
+static const int SERVO_MAX = 180;
+
+void setup() {
+  Serial.begin(9600);
+
+  shoulder.attach(2);
+  elbow.attach(3);
+  wrist.attach(4);
+}
+
+// Write to servos using motor limits
+void moveToAngle(double sA, double eA, double wA) {
+  sA = constrain((int)round(sA), SERVO_MIN, SERVO_MAX);
+  eA = constrain((int)round(eA), SERVO_MIN, SERVO_MAX);
+  wA = constrain((int)round(wA), SERVO_MIN, SERVO_MAX);
+
+  shoulder.write(sA);
+  elbow.write(eA);
+  wrist.write(wA);
+}
+
+// Inverse Kinematics for (x, y, z)
+void FindPos(double x, double y, double z) {
+  double sAngle = 0;
+  double eAngle = 0;
+  double wAngle = 0;
+
+  // Shoulder Angle
+  if (y == 0) {
+    sAngle = 90;
+  } else if (y < 0) {
+    sAngle = atan2(x, y) * (180.0 / PI);
+  } else {  // y > 0
+    sAngle = 180.0 - (atan2(x, y) * (180.0 / PI));
+  }
+
+  // Elbow Geometry
+  double h = sqrt((z * z) + (y * y));
+  double theta = atan2(z, abs(y)) * (180.0 / PI);
+
+  // NOTE: 744 is arm-specific linkage geometry
+  double val = (h / 2.0) / 744.0;
+
+  // Clamp to valid acos() domain
+  val = constrain(val, -1.0, 1.0);
+
+  double beta = acos(val) * (180.0 / PI);
+
+  // Elbow angle depends on the sign of Y
+  if(y < 0){
+    eAngle = theta + beta;
+  } 
+  else{
+    eAngle = 180.0 - (theta + beta);
+  }
+
+  // Wrist Angle
+  wAngle = 180.0 - (2.0 * beta);
+
+  // NaN Check
+  if (isnan(sAngle) || isnan(eAngle) || isnan(wAngle)) {
+    Serial.println("Full position unreachable");
+    return;
+  }
+
+  // Apply servo limits and send to motors
+  moveToAngle(sAngle, eAngle, wAngle);
+
+  // Debug
+  Serial.print("Shoulder: "); Serial.print(sAngle);
+  Serial.print("  Elbow: ");    Serial.print(eAngle);
+  Serial.print("  Wrist: ");    Serial.println(wAngle);
+}
+
+void loop() {
+  // Example test values (max approx 1488)
+  FindPos(200, 1000, 800);
+  delay(2000);
+
+  moveToAngle(0, 0, 0);  // Move home
+  delay(7000);
+}
