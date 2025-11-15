@@ -87,10 +87,18 @@ void FindPos(double x, double y, double z) {
 }
 
 void loop() {
-  // Example test values (max approx 1488)
-  FindPos(200, 1000, 800);
+  //Taking user input
+  Serial.println("What is the x coordinate");
+  int xVal = Serial.parseInt();
+  Serial.println("What is the y coordinate");
+  int yVal = Serial.parseInt();
+  Serial.println("What is the z coordinate");
+  int zVal = Serial.parseInt();
+  
+
+  moveToAngle(xVal, yVal, zVal);// Move to given values
   delay(2000);
 
-  moveToAngle(0, 0, 0);  // Move home
+  moveToAngle(0,0,0);  // Move home
   delay(7000);
 }
